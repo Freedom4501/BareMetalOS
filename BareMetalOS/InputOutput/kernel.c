@@ -1,14 +1,17 @@
+
+
 void printString(char *);
 void readString(char *);
 void readSector(char*, int);
 int mod(int, int);
 int div(int, int);
+void handleInterrupt21(int ax, int bx, int cx, int dx);
 
 
 int main()
 {
-//   char line[80]; 
-    char buffer[512];
+    char line[80]; 
+    // char buffer[512];
     // putInMemory(0xB000, 0x80A0, 'H');
     // putInMemory(0xB000, 0x80A1, 0x7);
     // putInMemory(0xB000, 0x80A2, 'e');
@@ -33,13 +36,20 @@ int main()
     // putInMemory(0xB000, 0x80B5, 0x7);
     // putInMemory(0xB000, 0x80B6, '!');
     // putInMemory(0xB000, 0x80B7, 0x7);
-    // printString("Hello World! \0");
+    // printString("Hello World!\0");
     
+    // makeInterrupt21();
+    // interrupt(0x21,0,0,0,0);
+
+    makeInterrupt21();
+    interrupt(0x21,1,line,0,0);
+    interrupt(0x21,0,line,0,0);
+
     // printString("Enter a line: \0");
     // readString(line);
     // printString(line);
-    readSector(buffer, 30);
-    printString(buffer);
+    // readSector(buffer, 30);
+    // printString(buffer);
     while (1){}
     return 0;
 }
@@ -89,16 +99,6 @@ void printString(char *chars){
       return;
     }
 
-    void readSector(char* buffer, int sector){
-      int track = div(sector, 36);
-      int head = mod(div(sector, 18),2);
-      int relative = mod(sector, 18) + 1;
-      int cx = track*256+relative;
-      int dx = head*256+0;
-
-      interrupt(0x13, 2*256+1, &buffer, cx, dx);
-    }
-
     int mod(int a, int b)
     {
       int temp;
@@ -118,3 +118,33 @@ void printString(char *chars){
       }
       return quotient;
     }
+    void readSector(char* buffer, int sector){
+      int relative = mod(sector, 18) + 1;
+      int head = mod(div(sector, 18),2);
+      int track = div(sector, 36);
+      int cx = track*256+relative;
+      int dx = head*256+0;
+      // printString("\r\n");
+      interrupt(0x13, (2*256)+1, &buffer, cx, dx);
+    }
+
+
+  void handleInterrupt21(int ax, int bx, int cx, int dx){
+    // printString("Hello world");
+    // printString("\r\n");
+    if(ax == 0){
+      printString(bx);
+      printString("\r\n");
+
+    }
+    else if(ax == 1){
+      printString("Enter a line: \0");
+      readString(bx);
+    }
+    else if(ax == 2){
+      readSector(bx, cx);
+    }
+    else if(ax >= 3){
+      printString("error, ax can't be 3 or greater");
+    }
+  }
