@@ -1,4 +1,4 @@
-
+//Worked with Mashengjun Li
 
 void printString(char *);
 void readString(char *);
@@ -10,46 +10,48 @@ void handleInterrupt21(int ax, int bx, int cx, int dx);
 
 int main()
 {
-    char line[80]; 
-    // char buffer[512];
-    // putInMemory(0xB000, 0x80A0, 'H');
-    // putInMemory(0xB000, 0x80A1, 0x7);
-    // putInMemory(0xB000, 0x80A2, 'e');
-    // putInMemory(0xB000, 0x80A3, 0x7);
-    // putInMemory(0xB000, 0x80A4, 'l');
-    // putInMemory(0xB000, 0x80A5, 0x7);
-    // putInMemory(0xB000, 0x80A6, 'l');
-    // putInMemory(0xB000, 0x80A7, 0x7);
-    // putInMemory(0xB000, 0x80A8, 'o');
-    // putInMemory(0xB000, 0x80A9, 0x7);
-    // putInMemory(0xB000, 0x80AA, ' ');
-    // putInMemory(0xB000, 0x80AB, 0x7);
-    // putInMemory(0xB000, 0x80AC, 'W');
-    // putInMemory(0xB000, 0x80AD, 0x7);
-    // putInMemory(0xB000, 0x80AE, 'o');
-    // putInMemory(0xB000, 0x80AF, 0x7);
-    // putInMemory(0xB000, 0x80B0, 'r');
-    // putInMemory(0xB000, 0x80B1, 0x7);
-    // putInMemory(0xB000, 0x80B2, 'l');
-    // putInMemory(0xB000, 0x80B3, 0x7);
-    // putInMemory(0xB000, 0x80B4, 'd');
-    // putInMemory(0xB000, 0x80B5, 0x7);
-    // putInMemory(0xB000, 0x80B6, '!');
-    // putInMemory(0xB000, 0x80B7, 0x7);
-    // printString("Hello World!\0");
+    char line[80];
+    char *printout; 
+    char buffer[512];
+    //1. Printing out hello world at the top left using raw memory commands
+    putInMemory(0xB000, 0x80A0, 'H');
+    putInMemory(0xB000, 0x80A1, 0x7);
+    putInMemory(0xB000, 0x80A2, 'e');
+    putInMemory(0xB000, 0x80A3, 0x7);
+    putInMemory(0xB000, 0x80A4, 'l');
+    putInMemory(0xB000, 0x80A5, 0x7);
+    putInMemory(0xB000, 0x80A6, 'l');
+    putInMemory(0xB000, 0x80A7, 0x7);
+    putInMemory(0xB000, 0x80A8, 'o');
+    putInMemory(0xB000, 0x80A9, 0x7);
+    putInMemory(0xB000, 0x80AA, ' ');
+    putInMemory(0xB000, 0x80AB, 0x7);
+    putInMemory(0xB000, 0x80AC, 'W');
+    putInMemory(0xB000, 0x80AD, 0x7);
+    putInMemory(0xB000, 0x80AE, 'o');
+    putInMemory(0xB000, 0x80AF, 0x7);
+    putInMemory(0xB000, 0x80B0, 'r');
+    putInMemory(0xB000, 0x80B1, 0x7);
+    putInMemory(0xB000, 0x80B2, 'l');
+    putInMemory(0xB000, 0x80B3, 0x7);
+    putInMemory(0xB000, 0x80B4, 'd');
+    putInMemory(0xB000, 0x80B5, 0x7);
+    putInMemory(0xB000, 0x80B6, '!');
+    putInMemory(0xB000, 0x80B7, 0x7);
+   
     
-    // makeInterrupt21();
-    // interrupt(0x21,0,0,0,0);
-
+    
     makeInterrupt21();
+    //2. Using printString to display a string to the console
+    printout = "Hello World!\0";
+    interrupt(0x21,0,printout,0,0);
+    //3. Reading and displaying characters entered with a keyboard
     interrupt(0x21,1,line,0,0);
+    //4. Displaying the string read back to the console at the start of a new line
     interrupt(0x21,0,line,0,0);
-
-    // printString("Enter a line: \0");
-    // readString(line);
-    // printString(line);
-    // readSector(buffer, 30);
-    // printString(buffer);
+    //5. Using readSector to read the sector that contains message.txt and displays the string to the console
+    interrupt(0x21,2, buffer, 30, 0);
+    interrupt(0x21,0, buffer, 0, 0);
     while (1){}
     return 0;
 }
@@ -125,13 +127,11 @@ void printString(char *chars){
       int cx = track*256+relative;
       int dx = head*256+0;
       // printString("\r\n");
-      interrupt(0x13, (2*256)+1, &buffer, cx, dx);
+      interrupt(0x13, (2*256)+1, buffer, cx, dx);
     }
 
 
   void handleInterrupt21(int ax, int bx, int cx, int dx){
-    // printString("Hello world");
-    // printString("\r\n");
     if(ax == 0){
       printString(bx);
       printString("\r\n");
@@ -143,6 +143,7 @@ void printString(char *chars){
     }
     else if(ax == 2){
       readSector(bx, cx);
+      //printString(bx);
     }
     else if(ax >= 3){
       printString("error, ax can't be 3 or greater");
