@@ -7,12 +7,13 @@
 #define TERMINATE 5
 
 #define SHELL_OUT "SHELL>\0"
-#define BAD_COMMAND "Bad Command!\r\n"
-#define CHANGE_LINE "\r\n"
+#define BAD_COMMAND "Bad Command!\r\n\0"
+#define CHANGE_LINE "\r\n\0"
 
 #define MAX_BUFFER_SIZE 13312
 #define EXECUTE_SIZE 8
 #define TYPE_SIZE 5
+#define DIR_SIZE 4
 #define MAX_COMMAND_SIZE 80
 
 
@@ -20,8 +21,8 @@ int executeCommand(char *);
 void getCommand(char*, char*);
 void getArg(char*, char*);
 int isEqual(char*, char*);
+void printDIR();
 
- 
 int main(){
     char* command;
     while(1){
@@ -30,6 +31,7 @@ int main(){
         interrupt(0x21, PRINT_STRING, CHANGE_LINE,0,0);
         if(!executeCommand(command)){
             interrupt(0x21, PRINT_STRING, BAD_COMMAND, 0, 0);
+            //interrupt(0x21, PRINT_STRING, CHANGE_LINE,0,0);
         } 
     }
 }
@@ -39,6 +41,7 @@ int executeCommand(char* command){
     char name[MAX_COMMAND_SIZE];
     char type[TYPE_SIZE];
     char execute[EXECUTE_SIZE];
+    char dir[DIR_SIZE];
     char* arg[MAX_COMMAND_SIZE];
     type[0] = 't';
     type[1] = 'y';
@@ -53,7 +56,10 @@ int executeCommand(char* command){
     execute[5] = 't';
     execute[6] = 'e';
     execute[7] = '\0';
-
+    dir[0] = 'd';
+    dir[1] = 'i';
+    dir[2] = 'r';
+    dir[3] = '\0';
     getCommand(command, name);
     if(isEqual(name, type)){
         getArg(command, arg);
@@ -64,13 +70,41 @@ int executeCommand(char* command){
         getArg(command, arg);
         interrupt(0x21, EXECUTE_PROG, arg, 0x2000 ,0);
         return 1;
-    } 
+    } else if(isEqual(name, dir)){
+        printDIR();
+        return 1;
+    }
     return 0;
+}
+void printDIR(){
+    char dir[512];
+    char filename[7];
+    char change_line[3];
+    int index;
+    int i;
+    change_line[0] = '\r';
+    change_line[1] = '\n';
+    change_line[2] = '\0';
+    
+    interrupt(0x21, READ_SECTOR, dir, 2 ,0);
+    for (index = 0; index < 512; index +=32)
+    {
+        for(i = 0; i<6&&dir[index+i]!=0x00; i++){
+            filename[i] = dir[index+i];
+        }
+        filename[i] = '\0';
+        interrupt(0x21, PRINT_STRING, filename, 0, 0);
+        if(filename[0]!='\0'){
+            interrupt(0x21, PRINT_STRING, change_line, 0, 0);
+        }
+        
+    }
+    
 }
 
 void getCommand(char* command, char* name){
     int i = 0;
-    while(command[i]!='\0' && command[i] != ' '){
+    while(command[i] !='\0' && command[i] != ' '){
         name[i] = command[i];
         i++;
     }

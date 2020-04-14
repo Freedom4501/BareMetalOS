@@ -5,11 +5,13 @@
 void printString(char *);
 void readString(char *);
 void readSector(char*, int);
+void readSector(char*, int);
 int mod(int, int);
 int div(int, int);
 int i;
 void handleInterrupt21(int, int, int, int);
 void readFile(char*, char*);
+void writeFile(char*,char*, int);
 void executeProgram(char* name, int segment);
 void terminate();
 
@@ -24,7 +26,13 @@ int main()
 }
   void printString(char *chars){
       while(*chars != 0x0){
-        interrupt(0x10, 0xe*256+*chars, 0, 0, 0);
+        if(*chars == '\n'){
+          interrupt(0x10, 0xe*256+0xa, 0, 0, 0);
+          interrupt(0x10, 0xe*256+0xd, 0, 0, 0);
+        }else{
+          interrupt(0x10, 0xe*256+*chars, 0, 0, 0);
+        }
+        
         chars++;  
       }
   }
@@ -93,8 +101,15 @@ int main()
       int track = div(sector, 36);
       int cx = track*256+relative;
       int dx = head*256+0;
-      // printString("\r\n");
       interrupt(0x13, (2*256)+1, buffer, cx, dx);
+    }
+    void writeSector(char* buffer, int sector){
+      int relative = mod(sector, 18) + 1;
+      int head = mod(div(sector, 18),2);
+      int track = div(sector, 36);
+      int cx = track*256+relative;
+      int dx = head*256+0;
+      interrupt(0x13, (3*256)+1, buffer, cx, dx);
     }
 
   void readFile(char* filename, char* buffer){
@@ -103,6 +118,8 @@ int main()
       int matches;
       int sectorNum;
       char directory[512];
+      buffer[0] = '\n';
+      buffer[1] = '\0';
       readSector(directory, 2);
       for(index = 0;index < 512; index+=32){
         matches = 1;
@@ -123,7 +140,9 @@ int main()
         }
       }  
   }
-
+  void writeFile(char* name, char* buffer, int numberOfSectors){
+    
+  }
 
 void executeProgram(char* name, int segment){
     char buffer[13312];
@@ -170,9 +189,11 @@ void executeProgram(char* name, int segment){
 
     else if(ax == 5){
       terminate();
+    }else if(ax == 6){
+      writeSector(bx, cx);
     }
     else{
-      printString("error, ax can't be 6 or greater");
+      printString("error, ax can't be 7 or greater");
     }
   }
 
